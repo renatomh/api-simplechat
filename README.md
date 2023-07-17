@@ -38,11 +38,12 @@ During the development of this project, the following techologies were used:
 
 ### Setting up infrastructure:
 
-Starting postgres container and creating database:
+Starting postgres container, creating database and running database migration up all versions:
 
 ```bash
 $ make postgres
 $ make createdb
+$ make migrateup
 ```
 
 ## 🌐 Setting up config files
