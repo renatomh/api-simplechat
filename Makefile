@@ -12,8 +12,14 @@ dropdb:
 migrateup:
 	migrate -path db/migration -database "$(DB_URL)" -verbose up
 
+migrateup1:
+	migrate -path db/migration -database "$(DB_URL)" -verbose up 1
+
 migratedown:
 	migrate -path db/migration -database "$(DB_URL)" -verbose down
+
+migratedown1:
+	migrate -path db/migration -database "$(DB_URL)" -verbose down 1
 
 sqlc:
 	docker run --rm -v "$(CURDIR):/src" -w //src kjconroy/sqlc generate
@@ -21,4 +27,4 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test
+.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test

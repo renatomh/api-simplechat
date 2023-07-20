@@ -40,11 +40,13 @@ type Message struct {
 }
 
 type User struct {
-	ID          int64          `json:"id"`
-	CreatedAt   time.Time      `json:"created_at"`
-	Name        string         `json:"name"`
-	Username    string         `json:"username"`
-	Email       sql.NullString `json:"email"`
-	AvatarUrl   sql.NullString `json:"avatar_url"`
-	LastLoginAt sql.NullTime   `json:"last_login_at"`
+	ID                int64          `json:"id"`
+	CreatedAt         time.Time      `json:"created_at"`
+	FullName          string         `json:"full_name"`
+	Username          string         `json:"username"`
+	Email             sql.NullString `json:"email"`
+	AvatarUrl         sql.NullString `json:"avatar_url"`
+	LastLoginAt       sql.NullTime   `json:"last_login_at"`
+	HashPass          string         `json:"hash_pass"`
+	PasswordChangedAt time.Time      `json:"password_changed_at"`
 }

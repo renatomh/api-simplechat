@@ -17,9 +17,10 @@ func createRandomUserViaAPI(t *testing.T) (User, error) {
 	randomUsers, err := util.QueryRandomUsersAPI(1)
 	require.NoError(t, err, "unexpected error querying random users API: %v", err)
 	arg := CreateUserParams{
-		Name:     fmt.Sprintf("%s %s", randomUsers[0].Name.First, randomUsers[0].Name.Last),
+		FullName: fmt.Sprintf("%s %s", randomUsers[0].Name.First, randomUsers[0].Name.Last),
 		Username: randomUsers[0].Login.Username,
 		Email:    sql.NullString{String: randomUsers[0].Email, Valid: true},
+		HashPass: randomUsers[0].Login.Password,
 	}
 
 	// Creating user in the database
@@ -27,9 +28,10 @@ func createRandomUserViaAPI(t *testing.T) (User, error) {
 	require.NoError(t, err)
 	require.NotEmpty(t, user)
 
-	require.Equal(t, arg.Name, user.Name)
+	require.Equal(t, arg.FullName, user.FullName)
 	require.Equal(t, arg.Username, user.Username)
 	require.Equal(t, arg.Email, user.Email)
+	require.Equal(t, arg.HashPass, user.HashPass)
 
 	require.NotZero(t, user.ID)
 	require.NotZero(t, user.CreatedAt)
@@ -42,7 +44,7 @@ func createRandomUser(t *testing.T) (User, error) {
 	// Retrieving a random user from the local functions
 	username := util.RandomUsername()
 	arg := CreateUserParams{
-		Name: fmt.Sprintf(
+		FullName: fmt.Sprintf(
 			"%s %s",
 			strings.Title(strings.Split(username, ".")[0]),
 			strings.Title(strings.Split(username, ".")[1]),
@@ -52,6 +54,7 @@ func createRandomUser(t *testing.T) (User, error) {
 			String: username + "@" + util.RandomString(int(util.RandomInt(6, 9))) + ".com",
 			Valid:  true,
 		},
+		HashPass: util.RandomString(int(util.RandomInt(18, 24))),
 	}
 
 	// Creating user in the database
@@ -59,9 +62,10 @@ func createRandomUser(t *testing.T) (User, error) {
 	require.NoError(t, err)
 	require.NotEmpty(t, user)
 
-	require.Equal(t, arg.Name, user.Name)
+	require.Equal(t, arg.FullName, user.FullName)
 	require.Equal(t, arg.Username, user.Username)
 	require.Equal(t, arg.Email, user.Email)
+	require.Equal(t, arg.HashPass, user.HashPass)
 
 	require.NotZero(t, user.ID)
 	require.NotZero(t, user.CreatedAt)
@@ -87,9 +91,10 @@ func TestGetUser(t *testing.T) {
 	require.NotEmpty(t, queriedUser)
 
 	require.Equal(t, createdUser.ID, queriedUser.ID)
-	require.Equal(t, createdUser.Name, queriedUser.Name)
+	require.Equal(t, createdUser.FullName, queriedUser.FullName)
 	require.Equal(t, createdUser.Username, queriedUser.Username)
 	require.Equal(t, createdUser.Email, queriedUser.Email)
+	require.Equal(t, createdUser.HashPass, queriedUser.HashPass)
 	require.WithinDuration(t, createdUser.CreatedAt, queriedUser.CreatedAt, time.Second)
 }
 
@@ -100,7 +105,7 @@ func TestUpdateUser(t *testing.T) {
 
 	args := UpdateUserParams{
 		ID:        createdUser.ID,
-		Name:      "Mr." + createdUser.Name,
+		FullName:  "Mr." + createdUser.FullName,
 		Username:  createdUser.Username,
 		Email:     createdUser.Email,
 		AvatarUrl: createdUser.AvatarUrl,
@@ -113,9 +118,10 @@ func TestUpdateUser(t *testing.T) {
 	require.NotEmpty(t, updatedUser)
 
 	require.Equal(t, createdUser.ID, updatedUser.ID)
-	require.Equal(t, args.Name, updatedUser.Name)
+	require.Equal(t, args.FullName, updatedUser.FullName)
 	require.Equal(t, createdUser.Username, updatedUser.Username)
 	require.Equal(t, createdUser.Email, updatedUser.Email)
+	require.Equal(t, createdUser.HashPass, updatedUser.HashPass)
 	require.WithinDuration(t, createdUser.CreatedAt, updatedUser.CreatedAt, time.Second)
 }
 
@@ -152,4 +158,25 @@ func TestListUsers(t *testing.T) {
 	for _, user := range users {
 		require.NotEmpty(t, user)
 	}
+}
+
+func TestChangeUserPassword(t *testing.T) {
+	// Creating a random user
+	createdUser, err := createRandomUser(t)
+	require.NoError(t, err, "unexpected error creating the user: %v", err)
+
+	args := ChangeUserPasswordParams{
+		ID:       createdUser.ID,
+		HashPass: util.RandomString(int(util.RandomInt(18, 24))),
+	}
+
+	// Changing the newly created user's password
+	updatedUser, err := testQueries.ChangeUserPassword(context.Background(), args)
+
+	require.NoError(t, err, "unexpected error changing user's password: %v", err)
+	require.NotEmpty(t, updatedUser)
+
+	require.Equal(t, createdUser.ID, updatedUser.ID)
+	require.Equal(t, args.HashPass, updatedUser.HashPass)
+	require.WithinDuration(t, updatedUser.PasswordChangedAt, time.Now(), time.Second)
 }
