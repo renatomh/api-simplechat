@@ -13,7 +13,14 @@ SELECT * FROM users
 WHERE id = $1 LIMIT 1;
 
 -- name: ListUsers :many
-SELECT * FROM users
+SELECT
+  id,
+  full_name,
+  username,
+  email,
+  avatar_url,
+  last_login_at
+FROM users
 ORDER BY id
 LIMIT $1
 OFFSET $2;

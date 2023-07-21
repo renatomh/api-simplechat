@@ -113,7 +113,14 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, created_at, full_name, username, email, avatar_url, last_login_at, hash_pass, password_changed_at FROM users
+SELECT
+  id,
+  full_name,
+  username,
+  email,
+  avatar_url,
+  last_login_at
+FROM users
 ORDER BY id
 LIMIT $1
 OFFSET $2
@@ -124,25 +131,31 @@ type ListUsersParams struct {
 	Offset int32 `json:"offset"`
 }
 
-func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
+type ListUsersRow struct {
+	ID          int64          `json:"id"`
+	FullName    string         `json:"full_name"`
+	Username    string         `json:"username"`
+	Email       sql.NullString `json:"email"`
+	AvatarUrl   sql.NullString `json:"avatar_url"`
+	LastLoginAt sql.NullTime   `json:"last_login_at"`
+}
+
+func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error) {
 	rows, err := q.db.QueryContext(ctx, listUsers, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []User
+	var items []ListUsersRow
 	for rows.Next() {
-		var i User
+		var i ListUsersRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.CreatedAt,
 			&i.FullName,
 			&i.Username,
 			&i.Email,
 			&i.AvatarUrl,
 			&i.LastLoginAt,
-			&i.HashPass,
-			&i.PasswordChangedAt,
 		); err != nil {
 			return nil, err
 		}

@@ -15,18 +15,21 @@ const (
 )
 
 var testQueries *Queries
+var testDB *sql.DB
 
 // TestMain is the managing point for all tests to be run in the package
 func TestMain(m *testing.M) {
-	// Connecting to the database
-	conn, err := sql.Open(dbDriver, dbSource)
+	var err error
+
+	// Connecting to the test database
+	testDB, err = sql.Open(dbDriver, dbSource)
 	// If an error is returned
 	if err != nil {
 		log.Fatal("cannot connect to database:", err)
 	}
 
 	// Initializing the test queries with the established connection
-	testQueries = New(conn)
+	testQueries = New(testDB)
 
 	// Running the tests
 	os.Exit(m.Run())
