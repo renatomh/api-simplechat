@@ -19,5 +19,11 @@ ORDER BY last_message_received_at
 LIMIT $2
 OFFSET $3;
 
+-- name: UpdateChat :one
+UPDATE chats
+SET last_message_received_at = now()
+WHERE id = $1
+RETURNING *;
+
 -- name: DeleteChat :exec
 DELETE FROM chats WHERE id = $1;

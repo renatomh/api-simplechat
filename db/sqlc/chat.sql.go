@@ -104,3 +104,22 @@ func (q *Queries) ListChats(ctx context.Context, arg ListChatsParams) ([]Chat, e
 	}
 	return items, nil
 }
+
+const updateChat = `-- name: UpdateChat :one
+UPDATE chats
+SET last_message_received_at = now()
+WHERE id = $1
+RETURNING id, from_user_id, to_user_id, last_message_received_at
+`
+
+func (q *Queries) UpdateChat(ctx context.Context, id int64) (Chat, error) {
+	row := q.db.QueryRowContext(ctx, updateChat, id)
+	var i Chat
+	err := row.Scan(
+		&i.ID,
+		&i.FromUserID,
+		&i.ToUserID,
+		&i.LastMessageReceivedAt,
+	)
+	return i, err
+}

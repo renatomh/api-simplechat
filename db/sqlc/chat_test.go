@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -71,6 +72,37 @@ func TestGetChat(t *testing.T) {
 	require.Equal(t, chat.FromUserID, queriedChat.FromUserID)
 	require.Equal(t, chat.ToUserID, queriedChat.ToUserID)
 	require.Empty(t, chat.LastMessageReceivedAt)
+}
+
+func TestUpdateChat(t *testing.T) {
+	// Creating random users
+	users := []User{}
+	for i := 0; i < 2; i++ {
+		user, _ := createRandomUser(t)
+		users = append(users, user)
+	}
+
+	// Creating contact between users
+	contact, _ := testQueries.CreateContact(context.Background(), CreateContactParams{
+		FromUserID: users[0].ID,
+		ToUserID:   users[1].ID,
+	})
+	// Creating chat for the contact
+	chat, _ := testQueries.CreateChat(context.Background(), CreateChatParams{
+		FromUserID: contact.FromUserID,
+		ToUserID:   contact.ToUserID,
+	})
+
+	// Updating the newly created chat by its ID
+	updatedChat, err := testQueries.UpdateChat(context.Background(), chat.ID)
+
+	require.NoError(t, err, "unexpected error updating the chat: %v", err)
+	require.NotEmpty(t, updatedChat)
+
+	require.Equal(t, chat.ID, updatedChat.ID)
+	require.Equal(t, chat.FromUserID, updatedChat.FromUserID)
+	require.Equal(t, chat.ToUserID, updatedChat.ToUserID)
+	require.WithinDuration(t, updatedChat.LastMessageReceivedAt.Time, time.Now(), time.Second)
 }
 
 func TestListChats(t *testing.T) {
