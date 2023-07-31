@@ -43,6 +43,7 @@ func createRandomUserViaAPI(t *testing.T) (User, error) {
 func createRandomUser(t *testing.T) (User, error) {
 	// Retrieving a random user from the local functions
 	username := util.RandomUsername()
+	hashpass, _ := util.HashPassword(util.RandomString(int(util.RandomInt(18, 24))))
 	arg := CreateUserParams{
 		FullName: fmt.Sprintf(
 			"%s %s",
@@ -54,7 +55,7 @@ func createRandomUser(t *testing.T) (User, error) {
 			String: username + "@" + util.RandomString(int(util.RandomInt(6, 9))) + ".com",
 			Valid:  true,
 		},
-		HashPass: util.RandomString(int(util.RandomInt(18, 24))),
+		HashPass: hashpass,
 	}
 
 	// Creating user in the database
@@ -86,6 +87,19 @@ func TestGetUser(t *testing.T) {
 
 	// Querying the newly created user by its ID
 	queriedUser, err := testQueries.GetUser(context.Background(), createdUser.ID)
+
+	require.NoError(t, err, "unexpected error querying the user: %v", err)
+	require.NotEmpty(t, queriedUser)
+
+	require.Equal(t, createdUser.ID, queriedUser.ID)
+	require.Equal(t, createdUser.FullName, queriedUser.FullName)
+	require.Equal(t, createdUser.Username, queriedUser.Username)
+	require.Equal(t, createdUser.Email, queriedUser.Email)
+	require.Equal(t, createdUser.HashPass, queriedUser.HashPass)
+	require.WithinDuration(t, createdUser.CreatedAt, queriedUser.CreatedAt, time.Second)
+
+	// Querying the newly created user by its username
+	queriedUser, err = testQueries.GetUserByUsername(context.Background(), createdUser.Username)
 
 	require.NoError(t, err, "unexpected error querying the user: %v", err)
 	require.NotEmpty(t, queriedUser)
@@ -165,9 +179,11 @@ func TestChangeUserPassword(t *testing.T) {
 	createdUser, err := createRandomUser(t)
 	require.NoError(t, err, "unexpected error creating the user: %v", err)
 
+	hashpass, _ := util.HashPassword(util.RandomString(int(util.RandomInt(18, 24))))
+
 	args := ChangeUserPasswordParams{
 		ID:       createdUser.ID,
-		HashPass: util.RandomString(int(util.RandomInt(18, 24))),
+		HashPass: hashpass,
 	}
 
 	// Changing the newly created user's password
