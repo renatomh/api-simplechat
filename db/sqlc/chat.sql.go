@@ -83,7 +83,7 @@ func (q *Queries) ListChats(ctx context.Context, arg ListChatsParams) ([]Chat, e
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Chat
+	items := []Chat{}
 	for rows.Next() {
 		var i Chat
 		if err := rows.Scan(

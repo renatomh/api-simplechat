@@ -94,7 +94,7 @@ func (q *Queries) ListMessages(ctx context.Context, arg ListMessagesParams) ([]M
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Message
+	items := []Message{}
 	for rows.Next() {
 		var i Message
 		if err := rows.Scan(

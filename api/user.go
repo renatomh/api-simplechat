@@ -80,3 +80,88 @@ func (server *Server) createUser(ctx *gin.Context) {
 	rsp := newUserResponse(user)
 	ctx.JSON(http.StatusOK, rsp)
 }
+
+type publicUserResponse struct {
+	Username    string    `json:"username"`
+	FullName    string    `json:"full_name"`
+	Email       string    `json:"email"`
+	AvatarUrl   string    `json:"avatar_url"`
+	LastLoginAt time.Time `json:"last_login_at"`
+}
+
+type getUserRequest struct {
+	ID int64 `uri:"id" binding:"required,min=1"`
+}
+
+func getUserResponse(user db.User) publicUserResponse {
+	return publicUserResponse{
+		Username:    user.Username,
+		FullName:    user.FullName,
+		Email:       user.Email.String,
+		AvatarUrl:   user.AvatarUrl.String,
+		LastLoginAt: user.LastLoginAt.Time,
+	}
+}
+
+func (server *Server) getUser(ctx *gin.Context) {
+	var req getUserRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUser(ctx, req.ID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	// We won't return user's sensitive data
+	rsp := getUserResponse(user)
+	ctx.JSON(http.StatusOK, rsp)
+}
+
+type listUserRequest struct {
+	PageID   int32 `form:"page_id" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
+}
+
+func listUserResponse(users []db.ListUsersRow) []publicUserResponse {
+	retUsers := []publicUserResponse{}
+	for _, u := range users {
+		retUsers = append(retUsers, publicUserResponse{
+			Username:    u.Username,
+			FullName:    u.FullName,
+			Email:       u.Email.String,
+			AvatarUrl:   u.AvatarUrl.String,
+			LastLoginAt: u.LastLoginAt.Time,
+		})
+	}
+	return retUsers
+}
+
+func (server *Server) listUser(ctx *gin.Context) {
+	var req listUserRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.ListUsersParams{
+		Limit:  req.PageSize,
+		Offset: (req.PageID - 1) * req.PageSize,
+	}
+	users, err := server.store.ListUsers(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	// We won't return user's sensitive data
+	rsp := listUserResponse(users)
+	ctx.JSON(http.StatusOK, rsp)
+}

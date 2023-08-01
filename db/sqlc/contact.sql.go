@@ -112,7 +112,7 @@ func (q *Queries) ListAcceptedContacts(ctx context.Context, arg ListAcceptedCont
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Contact
+	items := []Contact{}
 	for rows.Next() {
 		var i Contact
 		if err := rows.Scan(
@@ -158,7 +158,7 @@ func (q *Queries) ListContacts(ctx context.Context, arg ListContactsParams) ([]C
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Contact
+	items := []Contact{}
 	for rows.Next() {
 		var i Contact
 		if err := rows.Scan(
@@ -205,7 +205,7 @@ func (q *Queries) ListPendingContacts(ctx context.Context, arg ListPendingContac
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Contact
+	items := []Contact{}
 	for rows.Next() {
 		var i Contact
 		if err := rows.Scan(
@@ -252,7 +252,7 @@ func (q *Queries) ListRejectedContacts(ctx context.Context, arg ListRejectedCont
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Contact
+	items := []Contact{}
 	for rows.Next() {
 		var i Contact
 		if err := rows.Scan(
