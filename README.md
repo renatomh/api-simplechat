@@ -52,7 +52,11 @@ $ make migrateup
 
 ## ⏯️ Running
 
-To run the application locally ...
+To run the application locally, you can use the following command:
+
+```bash
+$ make server
+```
 
 ## 🔨 Project's *Deploy*
 

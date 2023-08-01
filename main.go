@@ -6,17 +6,18 @@ import (
 
 	"github.com/renatomh/api-simplechat/api"
 	db "github.com/renatomh/api-simplechat/db/sqlc"
-)
-
-const (
-	dbDriver      = "postgres"
-	dbSource      = "postgresql://root:secret@localhost:5432/simple_chat?sslmode=disable"
-	serverAddress = "0.0.0.0:8080"
+	"github.com/renatomh/api-simplechat/util"
 )
 
 func main() {
+	// Here, we provide the current folder (root dir) as the path where viper should look for config files
+	config, err := util.LoadConfig(".")
+	if err != nil {
+		log.Fatal("cannot load config:", err)
+	}
+
 	// Connecting to the database
-	conn, err := sql.Open(dbDriver, dbSource)
+	conn, err := sql.Open(config.DBDriver, config.DBSource)
 	// If an error is returned
 	if err != nil {
 		log.Fatal("cannot connect to database:", err)
@@ -25,7 +26,7 @@ func main() {
 	store := db.NewStore(conn)
 	server := api.NewServer(store)
 
-	err = server.Start(serverAddress)
+	err = server.Start(config.ServerAddress)
 	if err != nil {
 		log.Fatal("cannot start server:", err)
 	}
