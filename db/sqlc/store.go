@@ -5,14 +5,19 @@ import (
 )
 
 // Store defines all functions to execute db queries and transactions
-type Store struct {
+type Store interface {
+	Querier
+}
+
+// SQLStore implements Store interface, defining all function to execute SQL queries and transactions
+type SQLStore struct {
 	db *sql.DB
 	*Queries
 }
 
 // NewStore creates a new store
-func NewStore(db *sql.DB) *Store {
-	return &Store{
+func NewStore(db *sql.DB) Store {
+	return &SQLStore{
 		db:      db,
 		Queries: New(db),
 	}

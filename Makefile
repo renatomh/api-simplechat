@@ -30,4 +30,7 @@ test:
 server:
 	go run main.go
 
-.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test server
+mock:
+	mockgen -package mockdb -destination db/mock/store.go github.com/renatomh/api-simplechat/db/sqlc Store
+
+.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test server mock

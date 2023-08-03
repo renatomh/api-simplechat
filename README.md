@@ -35,6 +35,7 @@ During the development of this project, the following techologies were used:
 - [migrate](https://github.com/golang-migrate/migrate/tree/master/cmd/migrate)
 - [choco](https://chocolatey.org/install) and [choco install make](https://stackoverflow.com/questions/2532234/how-to-run-a-makefile-in-windows) for Windows
 - [sqlc](https://docs.sqlc.dev/en/stable/overview/install.html) (for Windows, we'll use it on a Docker image)
+- [mockgen](https://github.com/golang/mock#go-116)
 
 ### Setting up infrastructure:
 
