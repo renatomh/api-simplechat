@@ -22,38 +22,120 @@ func TestGetUserAPI(t *testing.T) {
 	// Creating a random user
 	user := randomUser()
 
-	// Initializing the gomock controller
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	// Defining tests cases
+	testCases := []struct {
+		name          string
+		userID        int64
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name:   "OK",
+			userID: user.ID,
+			buildStubs: func(store *mockdb.MockStore) {
+				// Building stubs to check the calling of GetUser method
+				store.EXPECT().
+					// Expects to have the same user ID
+					GetUser(gomock.Any(), gomock.Eq(user.ID)).
+					// Should be called only once
+					Times(1).
+					// And expects to return the user object and a nil error
+					// The return params musth match the 'querier' function declaration
+					Return(user, nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				// Checking if response is correct
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchUser(t, recorder.Body, user)
+			},
+		},
+		{
+			name:   "NotFound",
+			userID: user.ID,
+			buildStubs: func(store *mockdb.MockStore) {
+				// Building stubs to check the calling of GetUser method
+				store.EXPECT().
+					// Expects to have the same user ID
+					GetUser(gomock.Any(), gomock.Eq(user.ID)).
+					// Should be called only once
+					Times(1).
+					// And expects to return an empty user object and an error
+					Return(db.User{}, sql.ErrNoRows)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				// Checking if response is correct
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+		},
+		{
+			name:   "InternalError",
+			userID: user.ID,
+			buildStubs: func(store *mockdb.MockStore) {
+				// Building stubs to check the calling of GetUser method
+				store.EXPECT().
+					// Expects to have the same user ID
+					GetUser(gomock.Any(), gomock.Eq(user.ID)).
+					// Should be called only once
+					Times(1).
+					// And expects to return an empty user object and an error
+					Return(db.User{}, sql.ErrConnDone)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				// Checking if response is correct
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name:   "InvalidID",
+			userID: 0,
+			buildStubs: func(store *mockdb.MockStore) {
+				// Building stubs to check the calling of GetUser method
+				store.EXPECT().
+					// Will use an invalid ID
+					GetUser(gomock.Any(), gomock.Any()).
+					// Should not be called
+					Times(0)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				// Checking if response is correct
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+	}
 
-	// Initializing a new store with the gomock controller
-	store := mockdb.NewMockStore(ctrl)
+	// Testing the defined cases
+	for i := range testCases {
+		// Getting the test case to be checked
+		tc := testCases[i]
 
-	// Building stubs to check the calling of GetUser method
-	store.EXPECT().
-		// Expects to have the same user ID
-		GetUser(gomock.Any(), gomock.Eq(user.ID)).
-		// Should be called only once
-		Times(1).
-		// And expects to return the user object and a nil error
-		// The return params musth match the 'querier' function declaration
-		Return(user, nil)
+		// Running the test case
+		t.Run(tc.name, func(t *testing.T) {
+			// Initializing the gomock controller
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-	// Starting test server and sending request
-	server := NewServer(store)
-	recorder := httptest.NewRecorder()
+			// Initializing a new store with the gomock controller
+			store := mockdb.NewMockStore(ctrl)
 
-	// Defining request URL and making the request
-	url := fmt.Sprintf("/users/%d", user.ID)
-	request, err := http.NewRequest(http.MethodGet, url, nil)
-	require.NoError(t, err)
+			// Building stubs for the test case
+			tc.buildStubs(store)
 
-	// Here, we'll serve the requests and save it in the recorder
-	server.router.ServeHTTP(recorder, request)
+			// Starting test server and sending request
+			server := NewServer(store)
+			recorder := httptest.NewRecorder()
 
-	// Checking if response is correct
-	require.Equal(t, http.StatusOK, recorder.Code)
-	requireBodyMatchUser(t, recorder.Body, user)
+			// Defining request URL and making the request
+			url := fmt.Sprintf("/users/%d", tc.userID)
+			request, err := http.NewRequest(http.MethodGet, url, nil)
+			require.NoError(t, err)
+
+			// Here, we'll serve the requests and save it in the recorder
+			server.router.ServeHTTP(recorder, request)
+
+			// Checking the response
+			tc.checkResponse(t, recorder)
+		})
+	}
 }
 
 func randomUser() db.User {
