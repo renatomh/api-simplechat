@@ -8,9 +8,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	mockdb "github.com/renatomh/api-simplechat/db/mock"
 	db "github.com/renatomh/api-simplechat/db/sqlc"
@@ -18,9 +20,114 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Struct to hold fields for custom matcher
+type eqCreateUserParamsMatcher struct {
+	arg      db.CreateUserParams
+	password string
+}
+
+// Matches checks if provided args match, and returns the result
+func (e eqCreateUserParamsMatcher) Matches(x interface{}) bool {
+	// Checking if args are present in the interface
+	arg, ok := x.(db.CreateUserParams)
+	if !ok {
+		return false
+	}
+
+	// Checking if passwords match
+	err := util.CheckPassword(e.password, arg.HashPass)
+	if err != nil {
+		return false
+	}
+
+	e.arg.HashPass = arg.HashPass
+	return reflect.DeepEqual(e.arg, arg)
+}
+
+// String defines the matcher message
+func (e eqCreateUserParamsMatcher) String() string {
+	return fmt.Sprintf("matches arg %v and password %v", e.arg, e.password)
+}
+
+// Matcher for the provided and hashed password
+func EqCreateUserParams(arg db.CreateUserParams, password string) gomock.Matcher {
+	return eqCreateUserParamsMatcher{arg, password}
+}
+
+func TestCreateUserAPI(t *testing.T) {
+	user, password := randomUser(t)
+
+	testCases := []struct {
+		name          string
+		body          gin.H
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(recoder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "OK",
+			body: gin.H{
+				"username":  user.Username,
+				"password":  password,
+				"full_name": user.FullName,
+				"email":     user.Email.String,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				arg := db.CreateUserParams{
+					Username: user.Username,
+					FullName: user.FullName,
+					Email:    user.Email,
+				}
+				store.EXPECT().
+					CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).
+					Times(1).
+					Return(user, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchUser(t, recorder.Body, user)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			// Initializing the gomock controller
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			// Initializing a new store with the gomock controller
+			store := mockdb.NewMockStore(ctrl)
+
+			// Building stubs for the test case
+			tc.buildStubs(store)
+
+			// Starting test server and sending request
+			server := NewServer(store)
+			recorder := httptest.NewRecorder()
+
+			// Marshal body data to JSON
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			// Defining request URL and making the request
+			url := "/users"
+			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			// Here, we'll serve the requests and save it in the recorder
+			server.router.ServeHTTP(recorder, request)
+
+			// Checking the response
+			tc.checkResponse(recorder)
+		})
+	}
+}
+
 func TestGetUserAPI(t *testing.T) {
 	// Creating a random user
-	user := randomUser()
+	user, _ := randomUser(t)
 
 	// Defining tests cases
 	testCases := []struct {
@@ -138,11 +245,14 @@ func TestGetUserAPI(t *testing.T) {
 	}
 }
 
-func randomUser() db.User {
+func randomUser(t *testing.T) (user db.User, password string) {
 	// Retrieving a random user from the local functions
 	username := util.RandomUsername()
-	hashpass, _ := util.HashPassword(util.RandomString(int(util.RandomInt(18, 24))))
-	return db.User{
+	password = util.RandomString(6)
+	hashpass, err := util.HashPassword(password)
+	require.NoError(t, err)
+
+	user = db.User{
 		ID: util.RandomInt(1, 1000),
 		FullName: fmt.Sprintf(
 			"%s %s",
@@ -156,6 +266,9 @@ func randomUser() db.User {
 		},
 		HashPass: hashpass,
 	}
+
+	// Returning both user and password (as defined in the function signature)
+	return
 }
 
 // requireBodyMatchUser checks if the response body for the request is correct
