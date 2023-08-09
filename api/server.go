@@ -1,26 +1,48 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	db "github.com/renatomh/api-simplechat/db/sqlc"
+	"github.com/renatomh/api-simplechat/token"
+	"github.com/renatomh/api-simplechat/util"
 )
 
 // Server serves HTTP requests for the application
 type Server struct {
-	store  db.Store
-	router *gin.Engine
+	config     util.Config
+	store      db.Store
+	tokenMaker token.Maker
+	router     *gin.Engine
 }
 
-func NewServer(store db.Store) *Server {
-	server := &Server{store: store}
+func NewServer(config util.Config, store db.Store) (*Server, error) {
+	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create token maker: %w", err)
+	}
+
+	server := &Server{
+		config:     config,
+		store:      store,
+		tokenMaker: tokenMaker,
+	}
+
+	server.setupRouter()
+	return server, nil
+}
+
+func (server *Server) setupRouter() {
 	router := gin.Default()
 
+	// Adding routes to the router
 	router.POST("/users", server.createUser)
 	router.GET("/users/:id", server.getUser)
 	router.GET("/users", server.listUser)
+	router.POST("/users/login", server.loginUser)
 
 	server.router = router
-	return server
 }
 
 // Start runs the HTTP server on a specific address
