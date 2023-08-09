@@ -32,6 +32,49 @@ func (q *Queries) AcceptContact(ctx context.Context, id int64) (Contact, error) 
 	return i, err
 }
 
+const checkExistingContact = `-- name: CheckExistingContact :many
+SELECT id, from_user_id, to_user_id, status, requested_at, accepted_at FROM contacts
+WHERE 
+  (from_user_id = $1 AND to_user_id = $2) OR
+  (from_user_id = $2 AND to_user_id = $1)
+LIMIT 1
+`
+
+type CheckExistingContactParams struct {
+	FromUserID int64 `json:"from_user_id"`
+	ToUserID   int64 `json:"to_user_id"`
+}
+
+func (q *Queries) CheckExistingContact(ctx context.Context, arg CheckExistingContactParams) ([]Contact, error) {
+	rows, err := q.db.QueryContext(ctx, checkExistingContact, arg.FromUserID, arg.ToUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Contact{}
+	for rows.Next() {
+		var i Contact
+		if err := rows.Scan(
+			&i.ID,
+			&i.FromUserID,
+			&i.ToUserID,
+			&i.Status,
+			&i.RequestedAt,
+			&i.AcceptedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const createContact = `-- name: CreateContact :one
 INSERT INTO contacts (
   from_user_id,
@@ -279,7 +322,8 @@ func (q *Queries) ListRejectedContacts(ctx context.Context, arg ListRejectedCont
 const rejectContact = `-- name: RejectContact :one
 UPDATE contacts
 SET
-  status = 'Rejected'
+  status = 'Rejected',
+  accepted_at = NULL
 WHERE id = $1
 RETURNING id, from_user_id, to_user_id, status, requested_at, accepted_at
 `

@@ -65,6 +65,21 @@ func (mr *MockStoreMockRecorder) ChangeUserPassword(arg0, arg1 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeUserPassword", reflect.TypeOf((*MockStore)(nil).ChangeUserPassword), arg0, arg1)
 }
 
+// CheckExistingContact mocks base method.
+func (m *MockStore) CheckExistingContact(arg0 context.Context, arg1 db.CheckExistingContactParams) ([]db.Contact, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckExistingContact", arg0, arg1)
+	ret0, _ := ret[0].([]db.Contact)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckExistingContact indicates an expected call of CheckExistingContact.
+func (mr *MockStoreMockRecorder) CheckExistingContact(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckExistingContact", reflect.TypeOf((*MockStore)(nil).CheckExistingContact), arg0, arg1)
+}
+
 // CreateChat mocks base method.
 func (m *MockStore) CreateChat(arg0 context.Context, arg1 db.CreateChatParams) (db.Chat, error) {
 	m.ctrl.T.Helper()

@@ -11,6 +11,13 @@ INSERT INTO contacts (
 SELECT * FROM contacts
 WHERE id = $1 LIMIT 1;
 
+-- name: CheckExistingContact :many
+SELECT * FROM contacts
+WHERE 
+  (from_user_id = $1 AND to_user_id = $2) OR
+  (from_user_id = $2 AND to_user_id = $1)
+LIMIT 1;
+
 -- name: ListContacts :many
 SELECT * FROM contacts
 WHERE 
@@ -61,7 +68,8 @@ RETURNING *;
 -- name: RejectContact :one
 UPDATE contacts
 SET
-  status = 'Rejected'
+  status = 'Rejected',
+  accepted_at = NULL
 WHERE id = $1
 RETURNING *;
 

@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	AcceptContact(ctx context.Context, id int64) (Contact, error)
 	ChangeUserPassword(ctx context.Context, arg ChangeUserPasswordParams) (User, error)
+	CheckExistingContact(ctx context.Context, arg CheckExistingContactParams) ([]Contact, error)
 	CreateChat(ctx context.Context, arg CreateChatParams) (Chat, error)
 	CreateContact(ctx context.Context, arg CreateContactParams) (Contact, error)
 	CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error)

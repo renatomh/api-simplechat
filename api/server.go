@@ -46,6 +46,15 @@ func (server *Server) setupRouter() {
 	authRoutes.GET("/users/:id", server.getUser)
 	authRoutes.GET("/users", server.listUser)
 
+	authRoutes.POST("/contacts", server.createContact)
+	authRoutes.GET("/contacts", server.listContact)
+	authRoutes.GET("/contacts/pending", server.listPendingContact)
+	authRoutes.GET("/contacts/accepted", server.listAcceptedContact)
+	authRoutes.GET("/contacts/rejected", server.listRejectedContact)
+
+	authRoutes.PUT("/contacts/:id/accept", server.acceptContact)
+	authRoutes.PUT("/contacts/:id/reject", server.rejectContact)
+
 	server.router = router
 }
 
