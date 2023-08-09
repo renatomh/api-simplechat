@@ -38,9 +38,13 @@ func (server *Server) setupRouter() {
 
 	// Adding routes to the router
 	router.POST("/users", server.createUser)
-	router.GET("/users/:id", server.getUser)
-	router.GET("/users", server.listUser)
 	router.POST("/users/login", server.loginUser)
+
+	// Defining group of routes which require authentication
+	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
+
+	authRoutes.GET("/users/:id", server.getUser)
+	authRoutes.GET("/users", server.listUser)
 
 	server.router = router
 }

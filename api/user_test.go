@@ -11,11 +11,13 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	mockdb "github.com/renatomh/api-simplechat/db/mock"
 	db "github.com/renatomh/api-simplechat/db/sqlc"
+	"github.com/renatomh/api-simplechat/token"
 	"github.com/renatomh/api-simplechat/util"
 	"github.com/stretchr/testify/require"
 )
@@ -133,12 +135,16 @@ func TestGetUserAPI(t *testing.T) {
 	testCases := []struct {
 		name          string
 		userID        int64
+		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 		buildStubs    func(store *mockdb.MockStore)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name:   "OK",
 			userID: user.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildStubs: func(store *mockdb.MockStore) {
 				// Building stubs to check the calling of GetUser method
 				store.EXPECT().
@@ -157,8 +163,27 @@ func TestGetUserAPI(t *testing.T) {
 			},
 		},
 		{
+			name:   "NoAuthorization",
+			userID: user.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				// Building stubs to check the calling of GetUser method
+				store.EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				// Checking if response is correct
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+		{
 			name:   "NotFound",
 			userID: user.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildStubs: func(store *mockdb.MockStore) {
 				// Building stubs to check the calling of GetUser method
 				store.EXPECT().
@@ -177,6 +202,9 @@ func TestGetUserAPI(t *testing.T) {
 		{
 			name:   "InternalError",
 			userID: user.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildStubs: func(store *mockdb.MockStore) {
 				// Building stubs to check the calling of GetUser method
 				store.EXPECT().
@@ -195,6 +223,9 @@ func TestGetUserAPI(t *testing.T) {
 		{
 			name:   "InvalidID",
 			userID: 0,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildStubs: func(store *mockdb.MockStore) {
 				// Building stubs to check the calling of GetUser method
 				store.EXPECT().
@@ -236,6 +267,8 @@ func TestGetUserAPI(t *testing.T) {
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
+			// Setting up authentication
+			tc.setupAuth(t, request, server.tokenMaker)
 			// Here, we'll serve the requests and save it in the recorder
 			server.router.ServeHTTP(recorder, request)
 
