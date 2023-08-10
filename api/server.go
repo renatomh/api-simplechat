@@ -58,6 +58,9 @@ func (server *Server) setupRouter() {
 	authRoutes.POST("/chats", server.createChat)
 	authRoutes.GET("/chats", server.listChat)
 
+	authRoutes.POST("/messages", server.createMessage)
+	authRoutes.GET("/messages", server.listMessage)
+
 	server.router = router
 }
 
