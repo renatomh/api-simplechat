@@ -55,6 +55,9 @@ func (server *Server) setupRouter() {
 	authRoutes.PUT("/contacts/:id/accept", server.acceptContact)
 	authRoutes.PUT("/contacts/:id/reject", server.rejectContact)
 
+	authRoutes.POST("/chats", server.createChat)
+	authRoutes.GET("/chats", server.listChat)
+
 	server.router = router
 }
 

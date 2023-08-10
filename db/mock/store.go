@@ -211,6 +211,21 @@ func (mr *MockStoreMockRecorder) GetChat(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChat", reflect.TypeOf((*MockStore)(nil).GetChat), arg0, arg1)
 }
 
+// GetChatByUserIDs mocks base method.
+func (m *MockStore) GetChatByUserIDs(arg0 context.Context, arg1 db.GetChatByUserIDsParams) (db.Chat, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetChatByUserIDs", arg0, arg1)
+	ret0, _ := ret[0].(db.Chat)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetChatByUserIDs indicates an expected call of GetChatByUserIDs.
+func (mr *MockStoreMockRecorder) GetChatByUserIDs(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChatByUserIDs", reflect.TypeOf((*MockStore)(nil).GetChatByUserIDs), arg0, arg1)
+}
+
 // GetContact mocks base method.
 func (m *MockStore) GetContact(arg0 context.Context, arg1 int64) (db.Contact, error) {
 	m.ctrl.T.Helper()

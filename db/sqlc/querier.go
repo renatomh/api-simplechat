@@ -21,6 +21,7 @@ type Querier interface {
 	DeleteMessage(ctx context.Context, id int64) error
 	DeleteUser(ctx context.Context, id int64) error
 	GetChat(ctx context.Context, id int64) (Chat, error)
+	GetChatByUserIDs(ctx context.Context, arg GetChatByUserIDsParams) (Chat, error)
 	GetContact(ctx context.Context, id int64) (Contact, error)
 	GetMessage(ctx context.Context, id int64) (Message, error)
 	GetUser(ctx context.Context, id int64) (User, error)

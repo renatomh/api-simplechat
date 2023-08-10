@@ -10,6 +10,13 @@ INSERT INTO chats (
 SELECT * FROM chats
 WHERE id = $1 LIMIT 1;
 
+-- name: GetChatByUserIDs :one
+SELECT * FROM chats
+WHERE
+  (from_user_id = $1 AND to_user_id = $2) OR 
+  (from_user_id = $2 AND to_user_id = $1)
+LIMIT 1;
+
 -- name: ListChats :many
 SELECT * FROM chats
 WHERE 

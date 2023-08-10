@@ -61,6 +61,31 @@ func (q *Queries) GetChat(ctx context.Context, id int64) (Chat, error) {
 	return i, err
 }
 
+const getChatByUserIDs = `-- name: GetChatByUserIDs :one
+SELECT id, from_user_id, to_user_id, last_message_received_at FROM chats
+WHERE
+  (from_user_id = $1 AND to_user_id = $2) OR 
+  (from_user_id = $2 AND to_user_id = $1)
+LIMIT 1
+`
+
+type GetChatByUserIDsParams struct {
+	FromUserID int64 `json:"from_user_id"`
+	ToUserID   int64 `json:"to_user_id"`
+}
+
+func (q *Queries) GetChatByUserIDs(ctx context.Context, arg GetChatByUserIDsParams) (Chat, error) {
+	row := q.db.QueryRowContext(ctx, getChatByUserIDs, arg.FromUserID, arg.ToUserID)
+	var i Chat
+	err := row.Scan(
+		&i.ID,
+		&i.FromUserID,
+		&i.ToUserID,
+		&i.LastMessageReceivedAt,
+	)
+	return i, err
+}
+
 const listChats = `-- name: ListChats :many
 SELECT id, from_user_id, to_user_id, last_message_received_at FROM chats
 WHERE 
